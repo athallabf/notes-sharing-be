@@ -7,6 +7,7 @@ import (
 	"app/src/utils"
 	"app/src/validation"
 	"errors"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -54,9 +55,11 @@ func (s *authService) Register(c *fiber.Ctx, req *validation.Register) (*model.U
 		return nil, err
 	}
 
+	normalizedEmail := strings.ToLower(req.Email)
+
 	user := &model.User{
 		Name:     req.Name,
-		Email:    req.Email,
+		Email:    normalizedEmail,
 		Password: hashedPassword,
 	}
 
@@ -77,7 +80,9 @@ func (s *authService) Login(c *fiber.Ctx, req *validation.Login) (*model.User, e
 		return nil, err
 	}
 
-	user, err := s.UserService.GetUserByEmail(c, req.Email)
+	normalizedEmail := strings.ToLower(req.Email)
+
+	user, err := s.UserService.GetUserByEmail(c, normalizedEmail)
 	if err != nil {
 		return nil, fiber.NewError(fiber.StatusUnauthorized, "Invalid email or password")
 	}

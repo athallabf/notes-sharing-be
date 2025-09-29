@@ -28,6 +28,11 @@ var (
 	GoogleClientID      string
 	GoogleClientSecret  string
 	RedirectURL         string
+	S3Endpoint          string
+	S3Region            string
+	S3AccessKey         string
+	S3SecretKey         string
+	S3BucketName        string
 )
 
 func init() {
@@ -63,6 +68,13 @@ func init() {
 	GoogleClientID = viper.GetString("GOOGLE_CLIENT_ID")
 	GoogleClientSecret = viper.GetString("GOOGLE_CLIENT_SECRET")
 	RedirectURL = viper.GetString("REDIRECT_URL")
+
+	// S3 configuration
+	S3Endpoint = viper.GetString("S3_ENDPOINT")
+	S3Region = viper.GetString("S3_REGION")
+	S3AccessKey = viper.GetString("S3_ACCESS_KEY")
+	S3SecretKey = viper.GetString("S3_SECRET_KEY")
+	S3BucketName = viper.GetString("S3_BUCKET_NAME")
 }
 
 func loadConfig() {

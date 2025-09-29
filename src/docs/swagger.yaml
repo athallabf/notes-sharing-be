@@ -1,5 +1,16 @@
 basePath: /v1
 definitions:
+  example.CreateNoteResponse:
+    properties:
+      data:
+        $ref: '#/definitions/example.Note'
+      message:
+        example: Note created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    type: object
   example.CreateUserResponse:
     properties:
       code:
@@ -126,6 +137,27 @@ definitions:
         example: 1
         type: integer
     type: object
+  example.GetNoteResponse:
+    properties:
+      data:
+        $ref: '#/definitions/example.Note'
+      status:
+        example: success
+        type: string
+    type: object
+  example.GetNotesResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/example.Note'
+        type: array
+      results:
+        example: 1
+        type: integer
+      status:
+        example: success
+        type: string
+    type: object
   example.GetUserResponse:
     properties:
       code:
@@ -240,6 +272,18 @@ definitions:
         example: error
         type: string
     type: object
+  example.InvalidNoteIDError:
+    properties:
+      code:
+        example: 400
+        type: integer
+      message:
+        example: Invalid Note ID
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
   example.LoginResponse:
     properties:
       code:
@@ -278,6 +322,30 @@ definitions:
         type: string
       status:
         example: error
+        type: string
+    type: object
+  example.Note:
+    properties:
+      content:
+        example: This is the content of the note.
+        type: string
+      created_at:
+        example: "2025-09-29T10:00:00Z"
+        type: string
+      file_path:
+        example: abcdef-12345.pdf
+        type: string
+      file_url:
+        example: https://s3.tebi.io/your-bucket/abcdef-12345.pdf?...
+        type: string
+      id:
+        example: a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6
+        type: string
+      title:
+        example: My First Note
+        type: string
+      updated_at:
+        example: "2025-09-29T10:00:00Z"
         type: string
     type: object
   example.RefreshToken:
@@ -365,6 +433,17 @@ definitions:
         example: error
         type: string
     type: object
+  example.UpdateNoteResponse:
+    properties:
+      data:
+        $ref: '#/definitions/example.Note'
+      message:
+        example: Note updated successfully
+        type: string
+      status:
+        example: success
+        type: string
+    type: object
   example.UpdateUserResponse:
     properties:
       code:
@@ -378,6 +457,17 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/example.User'
+    type: object
+  example.UploadFileResponse:
+    properties:
+      data:
+        $ref: '#/definitions/example.Note'
+      message:
+        example: File uploaded and attached to note successfully
+        type: string
+      status:
+        example: success
+        type: string
     type: object
   example.User:
     properties:
@@ -408,6 +498,16 @@ definitions:
       status:
         example: success
         type: string
+    type: object
+  validation.CreateNote:
+    properties:
+      content:
+        type: string
+      title:
+        maxLength: 100
+        type: string
+    required:
+    - title
     type: object
   validation.CreateUser:
     properties:
@@ -480,6 +580,16 @@ definitions:
     - email
     - name
     - password
+    type: object
+  validation.UpdateNote:
+    properties:
+      content:
+        type: string
+      title:
+        maxLength: 100
+        type: string
+    required:
+    - title
     type: object
   validation.UpdatePassOrVerify:
     properties:
@@ -742,6 +852,200 @@ paths:
       summary: Health Check
       tags:
       - Health
+  /notes:
+    get:
+      description: Retrieves a list of all notes belonging to the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/example.GetNotesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/example.Unauthorized'
+      security:
+      - BearerAuth: []
+      summary: Get all notes for the user
+      tags:
+      - Notes
+    post:
+      consumes:
+      - application/json
+      description: Creates a new note associated with the authenticated user.
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/validation.CreateNote'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/example.CreateNoteResponse'
+        "400":
+          description: Bad Request (validation error)
+          schema:
+            $ref: '#/definitions/example.Unauthorized'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/example.Unauthorized'
+      security:
+      - BearerAuth: []
+      summary: Create a new note
+      tags:
+      - Notes
+  /notes/{noteId}:
+    delete:
+      description: Deletes a specific note by its ID. User must be the owner.
+      parameters:
+      - description: Note ID
+        in: path
+        name: noteId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/example.InvalidNoteIDError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/example.Unauthorized'
+        "404":
+          description: Note not found
+          schema:
+            $ref: '#/definitions/example.NotFound'
+      security:
+      - BearerAuth: []
+      summary: Delete a note
+      tags:
+      - Notes
+    get:
+      description: Retrieves a specific note by its ID. User must be the owner.
+      parameters:
+      - description: Note ID
+        in: path
+        name: noteId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/example.GetNoteResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/example.InvalidNoteIDError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/example.Unauthorized'
+        "404":
+          description: Note not found
+          schema:
+            $ref: '#/definitions/example.NotFound'
+      security:
+      - BearerAuth: []
+      summary: Get a single note by ID
+      tags:
+      - Notes
+    patch:
+      consumes:
+      - application/json
+      description: Updates a specific note by its ID. User must be the owner.
+      parameters:
+      - description: Note ID
+        in: path
+        name: noteId
+        required: true
+        type: string
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/validation.UpdateNote'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/example.UpdateNoteResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/example.InvalidNoteIDError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/example.Unauthorized'
+        "404":
+          description: Note not found
+          schema:
+            $ref: '#/definitions/example.NotFound'
+      security:
+      - BearerAuth: []
+      summary: Update a note
+      tags:
+      - Notes
+  /notes/{noteId}/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads a single file and attaches it to a note. User must be the
+        owner.
+      parameters:
+      - description: Note ID
+        in: path
+        name: noteId
+        required: true
+        type: string
+      - description: The file to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/example.UploadFileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/example.InvalidNoteIDError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/example.Unauthorized'
+        "404":
+          description: Note not found
+          schema:
+            $ref: '#/definitions/example.NotFound'
+      security:
+      - BearerAuth: []
+      summary: Upload a file to a note
+      tags:
+      - Notes
   /users:
     get:
       description: Only admins can retrieve all users.

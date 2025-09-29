@@ -5,6 +5,7 @@ import (
 	"app/src/utils"
 	"app/src/validation"
 	"errors"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -87,8 +88,9 @@ func (s *userService) GetUserByID(c *fiber.Ctx, id string) (*model.User, error) 
 func (s *userService) GetUserByEmail(c *fiber.Ctx, email string) (*model.User, error) {
 	user := new(model.User)
 
-	result := s.DB.WithContext(c.Context()).Where("email = ?", email).First(user)
+	normalizedEmail := strings.ToLower(email)
 
+	result := s.DB.WithContext(c.Context()).Where("email = ?", normalizedEmail).First(user)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, fiber.NewError(fiber.StatusNotFound, "User not found")
 	}
@@ -111,9 +113,11 @@ func (s *userService) CreateUser(c *fiber.Ctx, req *validation.CreateUser) (*mod
 		return nil, err
 	}
 
+	normalizedEmail := strings.ToLower(req.Email)
+
 	user := &model.User{
 		Name:     req.Name,
-		Email:    req.Email,
+		Email:    normalizedEmail,
 		Password: hashedPassword,
 		Role:     req.Role,
 	}
@@ -138,6 +142,10 @@ func (s *userService) UpdateUser(c *fiber.Ctx, req *validation.UpdateUser, id st
 
 	if req.Email == "" && req.Name == "" && req.Password == "" {
 		return nil, fiber.NewError(fiber.StatusBadRequest, "Invalid Request")
+	}
+
+	if req.Email != "" {
+		req.Email = strings.ToLower(req.Email)
 	}
 
 	if req.Password != "" {

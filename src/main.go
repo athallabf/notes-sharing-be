@@ -4,11 +4,13 @@ import (
 	"app/src/config"
 	"app/src/database"
 	"app/src/middleware"
+	"app/src/model"
 	"app/src/router"
 	"app/src/utils"
 	"context"
 	"fmt"
 	"os"
+
 	"os/signal"
 	"syscall"
 
@@ -54,7 +56,12 @@ func setupFiberApp() *fiber.App {
 	app.Use(middleware.LoggerConfig())
 	app.Use(helmet.New())
 	app.Use(compress.New())
-	app.Use(cors.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "http://localhost:7000",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowMethods:     "GET, POST, PATCH, DELETE",
+		AllowCredentials: true,
+	}))
 	app.Use(middleware.RecoverConfig())
 
 	return app
@@ -62,7 +69,10 @@ func setupFiberApp() *fiber.App {
 
 func setupDatabase() *gorm.DB {
 	db := database.Connect(config.DBHost, config.DBName)
-	// Add any additional database setup if needed
+	err := db.AutoMigrate(&model.User{}, &model.Token{}, &model.Note{})
+	if err != nil {
+		utils.Log.Fatalf("Failed to migrate database: %v", err)
+	}
 	return db
 }
 
