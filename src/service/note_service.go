@@ -59,7 +59,8 @@ func (s *noteService) CreateNote(c *fiber.Ctx, req *validation.CreateNote, userI
 
 func (s *noteService) GetNoteByID(c *fiber.Ctx, noteID, userID uuid.UUID) (*model.Note, error) {
 	var note model.Note
-	if err := s.DB.WithContext(c.Context()).Where("id = ? AND user_id = ?", noteID, userID).First(&note).Error; err != nil {
+	if err := s.DB.WithContext(c.Context()).Where("id = ? AND user_id = ?", noteID, userID).
+		First(&note).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fiber.NewError(fiber.StatusNotFound, "Note not found")
 		}
@@ -80,7 +81,10 @@ func (s *noteService) GetNoteByID(c *fiber.Ctx, noteID, userID uuid.UUID) (*mode
 
 func (s *noteService) GetNotesForUser(c *fiber.Ctx, userID uuid.UUID) ([]model.Note, error) {
 	var notes []model.Note
-	if err := s.DB.WithContext(c.Context()).Order("created_at desc").Where("user_id = ?", userID).Find(&notes).Error; err != nil {
+	if err := s.DB.WithContext(c.Context()).
+		Order("created_at desc").
+		Where("user_id = ?", userID).
+		Find(&notes).Error; err != nil {
 		s.Log.Errorf("Failed to get notes for user: %+v", err)
 		return nil, fiber.ErrInternalServerError
 	}
@@ -99,20 +103,24 @@ func (s *noteService) GetNotesForUser(c *fiber.Ctx, userID uuid.UUID) ([]model.N
 	return notes, nil
 }
 
-func (s *noteService) UpdateNote(c *fiber.Ctx, req *validation.UpdateNote, noteID, userID uuid.UUID) (*model.Note, error) {
+func (s *noteService) UpdateNote(
+	c *fiber.Ctx,
+	req *validation.UpdateNote,
+	noteID, userID uuid.UUID,
+) (*model.Note, error) {
 	if err := s.Validate.Struct(req); err != nil {
 		return nil, err
 	}
 
-	note, err := s.GetNoteByID(c, noteID, userID) // This also checks ownership
+	note, err := s.GetNoteByID(c, noteID, userID)
 	if err != nil {
-		return nil, err // Will be 404 if not found or not owned
+		return nil, err
 	}
 
 	note.Title = req.Title
 	note.Content = req.Content
 
-	if err := s.DB.WithContext(c.Context()).Save(note).Error; err != nil {
+	if err = s.DB.WithContext(c.Context()).Save(note).Error; err != nil {
 		s.Log.Errorf("Failed to update note: %+v", err)
 		return nil, fiber.ErrInternalServerError
 	}
@@ -150,13 +158,13 @@ func (s *noteService) UploadFileToNote(c *fiber.Ctx, noteID, userID uuid.UUID) (
 
 	uniqueFileName := uuid.New().String() + filepath.Ext(fileHeader.Filename)
 
-	if err := s.S3.UploadFile(file, uniqueFileName); err != nil {
+	if err = s.S3.UploadFile(file, uniqueFileName); err != nil {
 		s.Log.Errorf("Failed to upload file to S3: %v", err)
 		return nil, fiber.NewError(fiber.StatusInternalServerError, "Unable to save file")
 	}
 
 	note.FilePath = uniqueFileName
-	if err := s.DB.WithContext(c.Context()).Save(note).Error; err != nil {
+	if err = s.DB.WithContext(c.Context()).Save(note).Error; err != nil {
 		s.Log.Errorf("Failed to update note with file path: %+v", err)
 		return nil, fiber.ErrInternalServerError
 	}

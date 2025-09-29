@@ -70,9 +70,9 @@ func (s *s3Service) GeneratePresignedURL(objectKey string) (string, error) {
 		Bucket: &s.BucketName,
 		Key:    &objectKey,
 	}, func(opts *s3.PresignOptions) {
-		opts.Expires = time.Duration(15 * time.Minute)
-
+		opts.Expires = 15 * time.Minute
 	})
+
 	if err != nil {
 		return "", err
 	}

@@ -34,8 +34,10 @@ func (nc *NoteController) CreateNote(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
-	user := c.Locals("user").(*model.User)
-
+	user, err := getUserFromLocals(c)
+	if err != nil {
+		return err
+	}
 	note, err := nc.NoteService.CreateNote(c, req, user.ID)
 	if err != nil {
 		return err
@@ -57,7 +59,10 @@ func (nc *NoteController) CreateNote(c *fiber.Ctx) error {
 // @Failure      401  {object}  example.Unauthorized
 // @Router       /notes [get]
 func (nc *NoteController) GetNotes(c *fiber.Ctx) error {
-	user := c.Locals("user").(*model.User)
+	user, err := getUserFromLocals(c)
+	if err != nil {
+		return err
+	}
 
 	notes, err := nc.NoteService.GetNotesForUser(c, user.ID)
 	if err != nil {
@@ -88,7 +93,10 @@ func (nc *NoteController) GetNote(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid Note ID")
 	}
 
-	user := c.Locals("user").(*model.User)
+	user, err := getUserFromLocals(c)
+	if err != nil {
+		return err
+	}
 
 	note, err := nc.NoteService.GetNoteByID(c, noteID, user.ID)
 	if err != nil {
@@ -121,11 +129,14 @@ func (nc *NoteController) UpdateNote(c *fiber.Ctx) error {
 	}
 
 	req := new(validation.UpdateNote)
-	if err := c.BodyParser(req); err != nil {
+	if err = c.BodyParser(req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
-	user := c.Locals("user").(*model.User)
+	user, err := getUserFromLocals(c)
+	if err != nil {
+		return err
+	}
 
 	note, err := nc.NoteService.UpdateNote(c, req, noteID, user.ID)
 	if err != nil {
@@ -156,9 +167,12 @@ func (nc *NoteController) DeleteNote(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid Note ID")
 	}
 
-	user := c.Locals("user").(*model.User)
+	user, err := getUserFromLocals(c)
+	if err != nil {
+		return err
+	}
 
-	if err := nc.NoteService.DeleteNote(c, noteID, user.ID); err != nil {
+	if err = nc.NoteService.DeleteNote(c, noteID, user.ID); err != nil {
 		return err
 	}
 
@@ -184,7 +198,10 @@ func (nc *NoteController) UploadFile(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid Note ID")
 	}
 
-	user := c.Locals("user").(*model.User)
+	user, err := getUserFromLocals(c)
+	if err != nil {
+		return err
+	}
 
 	note, err := nc.NoteService.UploadFileToNote(c, noteID, user.ID)
 	if err != nil {
@@ -196,4 +213,12 @@ func (nc *NoteController) UploadFile(c *fiber.Ctx) error {
 		"message": "File uploaded and attached to note successfully",
 		"data":    note,
 	})
+}
+
+func getUserFromLocals(c *fiber.Ctx) (*model.User, error) {
+	user, ok := c.Locals("user").(*model.User)
+	if !ok || user == nil {
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "User context not found")
+	}
+	return user, nil
 }
